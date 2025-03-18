@@ -12,9 +12,6 @@ import os
 # 台灣證券交易所公告網址
 announcement_url = "https://mopsov.twse.com.tw/mops/web/ezsearch_query"
 
-# 紀錄已發送的公告
-sent_announcements = set()
-
 # 紀錄已發送的公告檔案路徑
 sent_announcements_file = "sent_announcements.json"
 
@@ -27,6 +24,9 @@ def load_sent_announcements():
 def save_sent_announcements():
     with open(sent_announcements_file, "w", encoding="utf-8") as file:
         json.dump(list(sent_announcements), file, ensure_ascii=False, indent=4)
+
+# 紀錄已發送的公告
+sent_announcements = load_sent_announcements()
 
 # 紀錄上次檢查日期
 last_checked_date = datetime.now().strftime('%Y%m%d')
@@ -142,20 +142,16 @@ def check_new_announcements():
         for announcement in new_announcements:
             announcement_details = f"{announcement['CDATE']}\n{announcement['COMPANY_ID']}{announcement['COMPANY_NAME']}\n{announcement['SUBJECT']}\n{announcement['HYPERLINK']}"
             print(announcement_details)
+        save_sent_announcements()  # 儲存已發送的公告
     else:
         print("沒有新的公告")
 
     return new_announcements
 
 
-# if __name__ == "__main__":
-#     # 啟動定時任務的背景執行緒
-#     schedule_thread = threading.Thread(target=run_schedule)
-#     schedule_thread.start()
-
-#     # 主執行緒繼續執行其他任務
-#     while True:
-#         time.sleep(1)
+if __name__ == "__main__":
+    
+    check_new_announcements()
 
 
     
