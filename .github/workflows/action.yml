@@ -19,7 +19,7 @@ jobs:
           python-version: '3.11'  # 指定你使用的 Python 版本，例如 '3.11'
 
       - name: Restore sent_announcements.json
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: sent_announcements
           path: .
