@@ -23,7 +23,7 @@ jobs:
           if [ ! -f sent_announcements.json ]; then echo "[]" > sent_announcements.json; fi
 
       - name: Restore sent_announcements.json
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: sent_announcements
           path: .
@@ -38,7 +38,7 @@ jobs:
           python run.py   # 執行你的 Python 檔案
 
       - name: Save sent_announcements.json
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: sent_announcements
           path: sent_announcements.json
