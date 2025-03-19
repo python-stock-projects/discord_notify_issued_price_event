@@ -18,6 +18,10 @@ jobs:
         with:
           python-version: '3.11'  # 指定你使用的 Python 版本，例如 '3.11'
 
+      - name: Ensure sent_announcements.json exists
+        run: |
+          if [ ! -f sent_announcements.json ]; then echo "[]" > sent_announcements.json; fi
+
       - name: Restore sent_announcements.json
         uses: actions/download-artifact@v4
         with:
@@ -28,10 +32,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install requests BeautifulSoup4
-
-      - name: Ensure sent_announcements.json exists
-        run: |
-          if [ ! -f sent_announcements.json ]; then echo "[]" > sent_announcements.json; fi
 
       - name: Run the script
         run: |
