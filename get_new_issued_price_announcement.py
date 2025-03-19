@@ -8,6 +8,7 @@ from datetime import datetime
 from bs4 import BeautifulSoup
 import urllib.parse
 import os
+import json
 
 # 台灣證券交易所公告網址
 announcement_url = "https://mopsov.twse.com.tw/mops/web/ezsearch_query"
@@ -18,10 +19,12 @@ sent_announcements_file = "sent_announcements.json"
 def load_sent_announcements():
     if os.path.exists(sent_announcements_file):
         with open(sent_announcements_file, "r", encoding="utf-8") as file:
-            return set(json.load(file))
+            content = file.read().strip()
+            if content:
+                return set(json.loads(content))
     return set()
 
-def save_sent_announcements():
+def save_sent_announcements(sent_announcements):
     with open(sent_announcements_file, "w", encoding="utf-8") as file:
         json.dump(list(sent_announcements), file, ensure_ascii=False, indent=4)
 
@@ -142,7 +145,7 @@ def check_new_announcements():
         for announcement in new_announcements:
             announcement_details = f"{announcement['CDATE']}\n{announcement['COMPANY_ID']}{announcement['COMPANY_NAME']}\n{announcement['SUBJECT']}\n{announcement['HYPERLINK']}"
             print(announcement_details)
-        save_sent_announcements()  # 儲存已發送的公告
+        save_sent_announcements(sent_announcements)  # 儲存已發送的公告
     else:
         print("沒有新的公告")
 
@@ -154,5 +157,5 @@ if __name__ == "__main__":
     check_new_announcements()
 
 
-    
+
 
