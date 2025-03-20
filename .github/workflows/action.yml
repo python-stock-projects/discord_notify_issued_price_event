@@ -25,10 +25,5 @@ jobs:
 
       - name: Run the script
         run: |
-          python get_new_issued_price_announcement.py   # 執行你的 Python 檔案
+          python run.py   # 執行你的 Python 檔案
 
-      - name: Save sent_announcements.json
-        uses: actions/upload-artifact@v4
-        with:
-          name: sent_announcements
-          path: sent_announcements.json
