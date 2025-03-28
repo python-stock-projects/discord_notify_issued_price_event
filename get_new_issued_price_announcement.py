@@ -2,47 +2,14 @@
 查詢公告快易查網站，關鍵字為"發行價格、收足"，並將新公告發送通知
 '''
 
-import os
 import json
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import requests
 from bs4 import BeautifulSoup
 import urllib.parse
 
 # 台灣證券交易所公告網址
 announcement_url = "https://mopsov.twse.com.tw/mops/web/ezsearch_query"
-
-# 紀錄已發送的公告檔案路徑
-sent_announcements_file = "sent_announcements.json"
-# 紀錄上次檢查日期的檔案路徑
-last_checked_date_file = "last_checked_date.txt"
-
-def load_sent_announcements():
-    if os.path.exists(sent_announcements_file):
-        with open(sent_announcements_file, "r", encoding="utf-8") as file:
-            content = file.read().strip()
-            if content:
-                return set(json.loads(content))
-    return set()
-
-def save_sent_announcements(sent_announcements):
-    with open(sent_announcements_file, "w", encoding="utf-8") as file:
-        json.dump(list(sent_announcements), file, ensure_ascii=False, indent=4)
-
-def load_last_checked_date():
-    if os.path.exists(last_checked_date_file):
-        with open(last_checked_date_file, "r", encoding="utf-8") as file:
-            return file.read().strip()
-    return None
-
-def save_last_checked_date(date):
-    with open(last_checked_date_file, "w", encoding="utf-8") as file:
-        file.write(date)
-
-# 紀錄已發送的公告
-sent_announcements = load_sent_announcements()
-# 紀錄上次檢查日期
-last_checked_date = load_last_checked_date()
 
 def get_sii_announcement(keyword):
     today = datetime.now().strftime('%Y%m%d')
@@ -52,6 +19,33 @@ def get_sii_announcement(keyword):
     if response.status_code == 200:
         json_data = response.text.lstrip('\ufeff')
         response_dict = json.loads(json_data)
+
+        # 篩選出 'CDATE' 和 'CTIME' 與現在時間相差一小時以內的資料
+        one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
+        print(f"OTC one_hour_ago = {one_hour_ago}")
+        filtered_data = []
+        for announcement in response_dict.get("data", []):
+            print(f"OTC announcement = {announcement}")
+            try:
+                # 將 CDATE 轉換為西元年格式
+                cdate_parts = announcement['CDATE'].split('/')
+                year = int(cdate_parts[0]) + 1911  # 將民國年轉換為西元年
+                month = cdate_parts[1]
+                day = cdate_parts[2]
+                converted_cdate = f"{year}-{month}-{day}"
+
+                # 組合 'CDATE' 和 'CTIME' 成 full_time
+                full_time = datetime.strptime(f"{converted_cdate} {announcement['CTIME']}", '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
+                print(f"OTC full_time = {full_time}")
+                if full_time >= one_hour_ago:
+                    filtered_data.append(announcement)
+                    print(f"一小時內的OTC announcement = {announcement}")
+            except ValueError as e:
+                # 如果時間格式不正確，跳過該公告
+                print(f"時間格式不正確: {e}")
+                continue
+
+        response_dict["data"] = filtered_data
         return response_dict
     return {"data": [], "message": ["查無公告資料"], "status": "fail"}
 
@@ -63,6 +57,33 @@ def get_otc_announcement(keyword):
     if response.status_code == 200:
         json_data = response.text.lstrip('\ufeff')
         response_dict = json.loads(json_data)
+
+        # 篩選出 'CDATE' 和 'CTIME' 與現在時間相差一小時以內的資料
+        one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
+        print(f"OTC one_hour_ago = {one_hour_ago}")
+        filtered_data = []
+        for announcement in response_dict.get("data", []):
+            print(f"OTC announcement = {announcement}")
+            try:
+                # 將 CDATE 轉換為西元年格式
+                cdate_parts = announcement['CDATE'].split('/')
+                year = int(cdate_parts[0]) + 1911  # 將民國年轉換為西元年
+                month = cdate_parts[1]
+                day = cdate_parts[2]
+                converted_cdate = f"{year}-{month}-{day}"
+
+                # 組合 'CDATE' 和 'CTIME' 成 full_time
+                full_time = datetime.strptime(f"{converted_cdate} {announcement['CTIME']}", '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
+                print(f"OTC full_time = {full_time}")
+                if full_time >= one_hour_ago:
+                    filtered_data.append(announcement)
+                    print(f"一小時內的OTC announcement = {announcement}")
+            except ValueError as e:
+                # 如果時間格式不正確，跳過該公告
+                print(f"時間格式不正確: {e}")
+                continue
+
+        response_dict["data"] = filtered_data
         return response_dict
     return {"data": [], "message": ["查無公告資料"], "status": "fail"}
 
@@ -75,60 +96,29 @@ def check_issued_price(link):
     return False
 
 def check_new_announcements():
-    global last_checked_date
-    today = datetime.now().strftime('%Y%m%d')
-    
-    # 如果跨日，清空 sent_announcements 並更新 last_checked_date
-    if last_checked_date is None or today != last_checked_date:
-        sent_announcements.clear()
-        save_sent_announcements(sent_announcements)
-        last_checked_date = today
-        save_last_checked_date(today)
 
-    sii_response_dict = get_sii_announcement("發行價格")
-    otc_response_dict = get_otc_announcement("發行價格")
+    # 取得第一組關鍵字 "發行價格" 的公告
+    sii_response_dict_1 = get_sii_announcement("發行價格")
+    otc_response_dict_1 = get_otc_announcement("發行價格")
 
-    new_announcements = []
+    # 取得第二組關鍵字 "收足" 的公告
+    sii_response_dict_2 = get_sii_announcement("收足")
+    otc_response_dict_2 = get_otc_announcement("收足")
 
-    if sii_response_dict["status"] == "success":
-        for announcement in sii_response_dict["data"]:
-            announcement_text = announcement["SUBJECT"]
-            if announcement_text not in sent_announcements:
-                if check_issued_price(announcement['HYPERLINK']):
-                    new_announcements.append(announcement)
-                    sent_announcements.add(announcement_text)
-    
-    if otc_response_dict["status"] == "success":
-        for announcement in otc_response_dict["data"]:
-            announcement_text = announcement["SUBJECT"]
-            if announcement_text not in sent_announcements:
-                if check_issued_price(announcement['HYPERLINK']):
-                    new_announcements.append(announcement)
-                    sent_announcements.add(announcement_text)
 
-    sii_response_dict = get_sii_announcement("收足")
-    otc_response_dict = get_otc_announcement("收足")
+    new_announcements = (
+        sii_response_dict_1["data"] + 
+        otc_response_dict_1["data"] +
+        sii_response_dict_2["data"] +
+        otc_response_dict_2["data"]
+    )
 
-    if sii_response_dict["status"] == "success":
-        for announcement in sii_response_dict["data"]:
-            announcement_text = announcement["SUBJECT"]
-            if announcement_text not in sent_announcements:
-                new_announcements.append(announcement)
-                sent_announcements.add(announcement_text)
-    
-    if otc_response_dict["status"] == "success":
-        for announcement in otc_response_dict["data"]:
-            announcement_text = announcement["SUBJECT"]
-            if announcement_text not in sent_announcements:
-                new_announcements.append(announcement)
-                sent_announcements.add(announcement_text)
-    
+
     if new_announcements:
         print("有新的公告：")
         for announcement in new_announcements:
             announcement_details = f"{announcement['CDATE']}\n{announcement['COMPANY_ID']}{announcement['COMPANY_NAME']}\n{announcement['SUBJECT']}\n{announcement['HYPERLINK']}"
             print(announcement_details)
-        save_sent_announcements(sent_announcements)
     else:
         print("沒有新的公告")
 

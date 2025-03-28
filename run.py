@@ -20,7 +20,7 @@ def generate_msg():
     new_announcements = check_new_announcements()  # 呼叫函式取得新公告
     if new_announcements:
         msg = '\n\n'.join(
-            f"{announcement['CDATE']}\n{announcement['COMPANY_ID']} {announcement['COMPANY_NAME']}\n{announcement['SUBJECT']}\n{announcement['HYPERLINK']}"
+            f"{announcement['CDATE']} {announcement['CTIME']}\n{announcement['COMPANY_ID']} {announcement['COMPANY_NAME']}\n{announcement['SUBJECT']}\n{announcement['HYPERLINK']}"
             for announcement in new_announcements
         )
         return msg
