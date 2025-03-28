@@ -34,10 +34,17 @@ def get_sii_announcement(keyword):
                 day = cdate_parts[2]
                 converted_cdate = f"{year}-{month}-{day}"
 
-                # 組合 'CDATE' 和 'CTIME' 成 full_time
-                full_time = datetime.strptime(f"{converted_cdate} {announcement['CTIME']}", '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
-                print(f"OTC full_time = {full_time}")
-                if full_time >= one_hour_ago:
+                # 組合 'CDATE' 和 'CTIME' 成 full_time（台灣時間）
+                full_time_taiwan = datetime.strptime(f"{converted_cdate} {announcement['CTIME']}", '%Y-%m-%d %H:%M:%S')
+
+                # 將台灣時間轉換為 UTC 時間並添加時區資訊
+                taiwan_offset = timedelta(hours=8)
+                full_time_utc = (full_time_taiwan - taiwan_offset).replace(tzinfo=timezone.utc)
+
+                print(f"SII full_time_taiwan = {full_time_taiwan}")
+                print(f"SII full_time_utc = {full_time_utc}")
+
+                if full_time_utc >= one_hour_ago:
                     filtered_data.append(announcement)
                     print(f"一小時內的OTC announcement = {announcement}")
             except ValueError as e:
@@ -72,10 +79,17 @@ def get_otc_announcement(keyword):
                 day = cdate_parts[2]
                 converted_cdate = f"{year}-{month}-{day}"
 
-                # 組合 'CDATE' 和 'CTIME' 成 full_time
-                full_time = datetime.strptime(f"{converted_cdate} {announcement['CTIME']}", '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
-                print(f"OTC full_time = {full_time}")
-                if full_time >= one_hour_ago:
+                # 組合 'CDATE' 和 'CTIME' 成 full_time（台灣時間）
+                full_time_taiwan = datetime.strptime(f"{converted_cdate} {announcement['CTIME']}", '%Y-%m-%d %H:%M:%S')
+
+                # 將台灣時間轉換為 UTC 時間並添加時區資訊
+                taiwan_offset = timedelta(hours=8)
+                full_time_utc = (full_time_taiwan - taiwan_offset).replace(tzinfo=timezone.utc)
+
+                print(f"OTC full_time_taiwan = {full_time_taiwan}")
+                print(f"OTC full_time_utc = {full_time_utc}")
+
+                if full_time_utc >= one_hour_ago:
                     filtered_data.append(announcement)
                     print(f"一小時內的OTC announcement = {announcement}")
             except ValueError as e:
