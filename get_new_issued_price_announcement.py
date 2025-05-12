@@ -5,6 +5,8 @@
 import json
 from datetime import datetime, timedelta, timezone
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from bs4 import BeautifulSoup
 import urllib.parse
 
@@ -15,7 +17,25 @@ def get_sii_announcement(keyword):
     today = datetime.now().strftime('%Y%m%d')
     encoded_keyword = urllib.parse.quote(keyword, encoding='utf-8')
     announcement_body = f'step=00&RADIO_CM=1&TYPEK=sii&CO_MARKET=&CO_ID=&PRO_ITEM=&SUBJECT={encoded_keyword}&SDATE={today}&EDATE=&lang=TW&AN='
-    response = requests.post(announcement_url, data=announcement_body)
+    
+    # 建立有 retry 的 session
+    session = requests.Session()
+    retries = Retry(
+        total=3,
+        backoff_factor=2,
+        status_forcelist=[502, 503, 504],
+        allowed_methods=["POST"]
+    )
+    session.mount('https://', HTTPAdapter(max_retries=retries))
+
+    try:
+        response = session.post(announcement_url, data=announcement_body, timeout=10)
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        print(f"連線失敗：{e}")
+        return {"data": [], "message": [f"連線失敗：{e}"], "status": "fail"}
+    
+    # response = requests.post(announcement_url, data=announcement_body)
     if response.status_code == 200:
         json_data = response.text.lstrip('\ufeff')
         response_dict = json.loads(json_data)
@@ -60,7 +80,25 @@ def get_otc_announcement(keyword):
     today = datetime.now().strftime('%Y%m%d')
     encoded_keyword = urllib.parse.quote(keyword, encoding='utf-8')
     announcement_body = f'step=00&RADIO_CM=1&TYPEK=otc&CO_MARKET=&CO_ID=&PRO_ITEM=&SUBJECT={encoded_keyword}&SDATE={today}&EDATE=&lang=TW&AN='
-    response = requests.post(announcement_url, data=announcement_body)
+    
+    # 建立有 retry 的 session
+    session = requests.Session()
+    retries = Retry(
+        total=3,
+        backoff_factor=2,
+        status_forcelist=[502, 503, 504],
+        allowed_methods=["POST"]
+    )
+    session.mount('https://', HTTPAdapter(max_retries=retries))
+
+    try:
+        response = session.post(announcement_url, data=announcement_body, timeout=10)
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        print(f"連線失敗：{e}")
+        return {"data": [], "message": [f"連線失敗：{e}"], "status": "fail"}
+    
+    # response = requests.post(announcement_url, data=announcement_body)
     if response.status_code == 200:
         json_data = response.text.lstrip('\ufeff')
         response_dict = json.loads(json_data)
